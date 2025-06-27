@@ -1,0 +1,6 @@
+txt
+
+fastapi
+uvicorn
+PyMuPDF
+requests

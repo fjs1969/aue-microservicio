@@ -4,6 +4,17 @@ from docx import Document
 import tempfile
 import os
 
+def descargar_archivo(url, nombre_salida):
+    """Descarga un archivo desde una URL y lo guarda en el directorio temporal."""
+    respuesta = requests.get(url)
+    if respuesta.status_code == 200:
+        ruta = os.path.join(tempfile.gettempdir(), nombre_salida)
+        with open(ruta, "wb") as f:
+            f.write(respuesta.content)
+        return ruta
+    else:
+        raise RuntimeError(f"No se pudo descargar el archivo: {url}")
+
 def extraer_texto(pdf_path):
     texto = ""
     with fitz.open(pdf_path) as doc:
@@ -12,25 +23,15 @@ def extraer_texto(pdf_path):
     return texto
 
 def procesar_pdfs(municipio, url_ficha, url_informe, output_path=None):
-    # Descargar PDFs
-    ficha = requests.get(url_ficha)
-    informe = requests.get(url_informe)
-    if ficha.status_code != 200 or informe.status_code != 200:
-        raise RuntimeError("No se pudieron descargar los PDFs")
+    try:
+        ruta_ficha = descargar_archivo(url_ficha, "ficha.pdf")
+        ruta_informe = descargar_archivo(url_informe, "informe.pdf")
+    except RuntimeError as e:
+        raise RuntimeError("No se pudieron descargar los PDFs") from e
 
-    # Guardar PDFs temporalmente
-    ruta_ficha = os.path.join(tempfile.gettempdir(), "ficha.pdf")
-    ruta_informe = os.path.join(tempfile.gettempdir(), "informe.pdf")
-    with open(ruta_ficha, "wb") as f:
-        f.write(ficha.content)
-    with open(ruta_informe, "wb") as f:
-        f.write(informe.content)
-
-    # Extraer texto
     texto_ficha = extraer_texto(ruta_ficha)
     texto_informe = extraer_texto(ruta_informe)
 
-    # Crear DOCX
     doc = Document()
     doc.add_heading(f"Diagnóstico AUE - {municipio}", level=1)
     doc.add_heading("4.4.1. Diagnóstico territorial y ambiental", level=2)
@@ -44,10 +45,11 @@ def procesar_pdfs(municipio, url_ficha, url_informe, output_path=None):
         "Movilidad y accesibilidad": "Red vial local, baja densidad y limitada accesibilidad.",
         "Riesgos ambientales": "Riesgo principal: incendios forestales y posibles inundaciones."
     }
+
     for title, text in sections.items():
         doc.add_heading(title, level=3)
         doc.add_paragraph(text)
 
-    # Guardar archivo .docx
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    doc.save(output_path)
+    if output_path:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        doc.save(output_path)

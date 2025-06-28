@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from .pdf_processor import procesar_pdfs
 from docx import Document
-from .pdf_processor import procesar_pdfs  # Asegúrate que este import funciona y el archivo existe
+import os
 
 app = FastAPI()
 
@@ -14,27 +15,28 @@ class InputData(BaseModel):
 @app.post("/procesar")
 def procesar(data: InputData):
     try:
-        # 🧾 Mostrar los datos de entrada en logs para depuración
-        print("📥 Datos recibidos:", data)
+        # 🧾 Verifica datos de entrada
+        print(f"📥 Recibido: {data}")
 
-        # 🧠 Procesar PDFs con tu lógica personalizada
+        # 🧠 Procesamiento principal
         resultado = procesar_pdfs(data.municipio, data.url_ficha, data.url_informe)
 
-        # 📄 Crear documento Word con el resultado
+        # 📄 Generar documento Word
         doc = Document()
         doc.add_heading(f"Diagnóstico AUE - {data.municipio}", 0)
         doc.add_paragraph(resultado)
 
-        # 💾 Guardar el archivo con nombre en minúscula
-        path_docx = f"{data.municipio.lower()}_diagnostico.docx"
-        doc.save(path_docx)
+        filename = f"{data.municipio.lower()}_diagnostico.docx"
+        filepath = os.path.join("/tmp", filename)  # ubicación temporal segura
+        doc.save(filepath)
 
-        # 📤 Devolver el documento como archivo descargable
+        # 📤 Devolver archivo Word
         return FileResponse(
-            path=path_docx,
-            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            filename=path_docx
+            path=filepath,
+            filename=filename,
+            media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         )
 
     except Exception as e:
+        print(f"❌ Error al procesar: {e}")
         raise HTTPException(status_code=500, detail=str(e))

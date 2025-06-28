@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException
+ffrom fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from docx import Document
-from .pdf_processor import procesar_pdfs  # Asegúrate de que este archivo exista
+from .pdf_processor import procesar_pdfs
+import os
 
 app = FastAPI()
 
@@ -14,26 +14,23 @@ class InputData(BaseModel):
 @app.post("/procesar")
 def procesar(data: InputData):
     try:
-        # Log de entrada para depuración
-        print(f"📥 Recibido: municipio='{data.municipio}' url_ficha='{data.url_ficha}'; url_informe='{data.url_informe}'")
+        print("📥 Recibido:", data)
+        
+        # Nombre y ruta temporal para guardar el archivo generado
+        output_filename = f"{data.municipio.lower().replace(' ', '_')}_diagnostico.docx"
+        output_path = os.path.join("/tmp", output_filename)
 
-        # Procesar PDFs y generar contenido
-        resultado = procesar_pdfs(data.municipio, data.url_ficha, data.url_informe)
+        # Ejecutar el procesamiento y crear el .docx
+        procesar_pdfs(data.municipio, data.url_ficha, data.url_informe, output_path)
 
-        # Crear archivo Word con el resultado
-        doc = Document()
-        doc.add_heading(f"Diagnóstico AUE - {data.municipio}", 0)
-        doc.add_paragraph(resultado)
+        if not os.path.exists(output_path):
+            raise FileNotFoundError("❌ No se ha generado el archivo .docx")
 
-        # Guardar con nombre normalizado
-        nombre_docx = f"{data.municipio.lower()}_diagnostico.docx".replace(" ", "_")
-        doc.save(nombre_docx)
-
-        # Devolver el archivo como descarga
+        # Devolver el archivo .docx como respuesta
         return FileResponse(
-            path=nombre_docx,
-            media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            filename=nombre_docx
+            output_path,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            filename=output_filename
         )
 
     except Exception as e:

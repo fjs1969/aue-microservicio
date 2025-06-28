@@ -2,3 +2,4 @@ fastapi
 uvicorn
 PyMuPDF
 requests
+python-docx

@@ -1,7 +1,7 @@
-# app/visor_scraper.py
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from PIL import Image
 import time
@@ -12,7 +12,11 @@ def capturar_mapa(nombre_municipio, capa, output_dir):
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--window-size=1920,1080")
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
 
     try:
         driver.get(url_base)
@@ -32,7 +36,8 @@ def capturar_mapa(nombre_municipio, capa, output_dir):
         """)
         time.sleep(4)
 
-        screenshot_path = os.path.join(output_dir, f"{nombre_municipio}_{capa.replace(' ', '_')}.png")
+        filename = f"{nombre_municipio}_{capa.replace(' ', '_')}.png"
+        screenshot_path = os.path.join(output_dir, filename)
         driver.save_screenshot(screenshot_path)
         print(f"Mapa capturado: {screenshot_path}")
         return screenshot_path

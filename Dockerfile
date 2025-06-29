@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# Instala dependencias del sistema para Chromium y otras herramientas
+# Instala dependencias del sistema necesarias para Chromium
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -27,15 +27,16 @@ RUN apt-get update && apt-get install -y \
 # Define ruta de Chromium para Selenium
 ENV CHROME_BIN=/usr/bin/chromium
 
-# Instala dependencias de Python
+# Instala las dependencias de Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el resto del proyecto
+# Copia el resto del código
 COPY . /app
 WORKDIR /app
 
-# Expone el puerto por defecto de FastAPI
+# Expone el puerto por defecto
 EXPOSE 8000
 
+# Comando de inicio
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

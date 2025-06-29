@@ -1,7 +1,9 @@
 fastapi
-        uvicorn
-        python-docx
-        PyMuPDF
-        requests
-        python-multipart
-        
+uvicorn
+pydantic
+python-multipart
+requests
+selenium
+webdriver-manager
+pillow
+python-docx

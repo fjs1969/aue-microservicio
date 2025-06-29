@@ -1,6 +1,9 @@
 import requests
 import fitz  # PyMuPDF
 from docx import Document
+import requests
+import fitz  # PyMuPDF
+from docx import Document
 import tempfile
 import os
 
@@ -24,7 +27,7 @@ def extraer_texto(pdf_path):
     return texto
 
 def procesar_pdfs(municipio, url_ficha, url_informe, output_path=None):
-    """Procesa la ficha municipal y el informe ambiental."""
+    """Procesa dos PDF principales (ficha e informe) y genera un diagnóstico simple."""
     try:
         ruta_ficha = descargar_archivo(url_ficha, "ficha.pdf")
         ruta_informe = descargar_archivo(url_informe, "informe.pdf")
@@ -57,7 +60,7 @@ def procesar_pdfs(municipio, url_ficha, url_informe, output_path=None):
         doc.save(output_path)
 
 def procesar_municipio_completo(municipio, urls, output_path):
-    """Procesa múltiples documentos del municipio y genera un único DOCX."""
+    """Procesa múltiples documentos del municipio y genera un único DOCX con diagnósticos."""
     try:
         textos_extraidos = []
         for nombre, url in urls.items():
@@ -73,7 +76,7 @@ def procesar_municipio_completo(municipio, urls, output_path):
 
     for nombre, contenido in textos_extraidos:
         doc.add_heading(nombre, level=3)
-        doc.add_paragraph(contenido[:3000])  # Limitar contenido por sección
+        doc.add_paragraph(contenido[:3000])  # limitar contenido por sección
 
     if output_path:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

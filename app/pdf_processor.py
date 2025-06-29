@@ -16,6 +16,7 @@ def descargar_archivo(url, nombre_salida):
         raise RuntimeError(f"No se pudo descargar el archivo: {url}")
 
 def extraer_texto(pdf_path):
+    """Extrae el texto de un archivo PDF."""
     texto = ""
     with fitz.open(pdf_path) as doc:
         for page in doc:
@@ -23,6 +24,7 @@ def extraer_texto(pdf_path):
     return texto
 
 def procesar_pdfs(municipio, url_ficha, url_informe, output_path=None):
+    """Procesa la ficha municipal y el informe ambiental."""
     try:
         ruta_ficha = descargar_archivo(url_ficha, "ficha.pdf")
         ruta_informe = descargar_archivo(url_informe, "informe.pdf")
@@ -49,6 +51,29 @@ def procesar_pdfs(municipio, url_ficha, url_informe, output_path=None):
     for title, text in sections.items():
         doc.add_heading(title, level=3)
         doc.add_paragraph(text)
+
+    if output_path:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        doc.save(output_path)
+
+def procesar_municipio_completo(municipio, urls, output_path):
+    """Procesa múltiples documentos del municipio y genera un único DOCX."""
+    try:
+        textos_extraidos = []
+        for nombre, url in urls.items():
+            ruta = descargar_archivo(url, f"{nombre}.pdf")
+            texto = extraer_texto(ruta)
+            textos_extraidos.append((nombre, texto))
+    except RuntimeError as e:
+        raise RuntimeError("Fallo en descarga o procesamiento de archivos") from e
+
+    doc = Document()
+    doc.add_heading(f"Diagnóstico AUE - {municipio}", level=1)
+    doc.add_heading("4.4.1. Diagnóstico territorial y ambiental", level=2)
+
+    for nombre, contenido in textos_extraidos:
+        doc.add_heading(nombre, level=3)
+        doc.add_paragraph(contenido[:3000])  # Limitar contenido por sección
 
     if output_path:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

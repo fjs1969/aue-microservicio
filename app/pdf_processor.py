@@ -1,41 +1,40 @@
+# app/pdf_processor.py
 import os
 import fitz  # PyMuPDF
-import requests
 from docx import Document
 from docx.shared import Inches
+from app.visor_scraper import capturar_mapa
 
-def descargar_pdf(url, destino):
-    response = requests.get(url)
-    if response.status_code == 200:
-        with open(destino, "wb") as f:
-            f.write(response.content)
-    else:
-        raise Exception(f"No se pudo descargar el archivo: {url}")
+def extraer_texto_y_tablas(pdf_path):
+    texto = ""
+    tablas = []
+    doc = fitz.open(pdf_path)
+    for page in doc:
+        texto += page.get_text()
+    return texto, tablas
 
-def extraer_texto_pdf(ruta_pdf):
-    texto_total = ""
-    with fitz.open(ruta_pdf) as doc:
-        for pagina in doc:
-            texto_total += pagina.get_text()
-    return texto_total
-
-def crear_documento(texto_extraido, municipio, output_path):
-    doc = Document()
-    doc.add_heading(f"Diagnóstico de {municipio}", level=1)
-    doc.add_paragraph(texto_extraido)
-    doc.save(output_path)
-
-def procesar_municipio_completo(municipio, urls: dict, output_path: str):
-    carpeta_temp = "temp_pdfs"
-    os.makedirs(carpeta_temp, exist_ok=True)
+def procesar_municipio_completo(municipio, urls, output_filename):
+    output_folder = os.path.join("output", municipio.replace(" ", "_"))
+    os.makedirs(output_folder, exist_ok=True)
 
     texto_total = ""
     for nombre_doc, url in urls.items():
-        nombre_archivo = f"{municipio}_{nombre_doc.replace(' ', '_')}.pdf"
-        ruta_archivo = os.path.join(carpeta_temp, nombre_archivo)
-        descargar_pdf(url, ruta_archivo)
-        texto = extraer_texto_pdf(ruta_archivo)
-        texto_total += f"\n\n===== {nombre_doc} =====\n\n"
-        texto_total += texto
+        file_path = os.path.join(output_folder, f"{nombre_doc.replace(' ', '_')}.pdf")
+        os.system(f"wget -q \"{url}\" -O \"{file_path}\"")
+        texto, _ = extraer_texto_y_tablas(file_path)
+        texto_total += f"\n--- {nombre_doc} ---\n{texto}\n"
 
-    crear_documento(texto_total, municipio, output_path)
+    doc = Document()
+    doc.add_heading(f"Diagnóstico Agenda Urbana de {municipio}", 0)
+    doc.add_paragraph(texto_total)
+
+    # Captura de mapa y adición al documento
+    try:
+        mapa_path = capturar_mapa(municipio, "Tipología de vulnerabilidad", output_folder)
+        doc.add_heading("Mapa de Tipología de Vulnerabilidad", level=1)
+        doc.add_picture(mapa_path, width=Inches(6))
+    except Exception as e:
+        doc.add_paragraph(f"No se pudo capturar el mapa: {str(e)}")
+
+    doc.save(output_filename)
+    print(f"Diagnóstico guardado en: {output_filename}")

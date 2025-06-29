@@ -12,16 +12,23 @@ def procesar_municipio_completo(municipio, urls, output_filename):
     # Insertar textos de PDFs
     for name, url in urls.items():
         doc.add_heading(name, level=2)
-        doc.add_paragraph(f"Contenido extraído automáticamente de: {url}")
+        doc.add_paragraph(f"Contenido extraído automáticamente desde: {url}")
+        # Aquí podrías integrar análisis real del PDF
 
-    # Capturar e insertar mapa de vulnerabilidad
-    mapa_path = os.path.join(os.path.dirname(output_filename), "mapa_vulnerabilidad.png")
-    try:
-        capturar_mapa(municipio, "Tipología de vulnerabilidad", mapa_path)
-        doc.add_heading("Mapa de vulnerabilidad territorial", level=2)
-        doc.add_picture(mapa_path, width=Inches(6))
-    except Exception as e:
-        doc.add_paragraph(f"No se pudo capturar el mapa: {str(e)}")
+    # Capturar mapas desde el visor GVA
+    capas = [
+        "Tipología de vulnerabilidad",
+        "Densidad urbana",
+        "Sistemas generales"
+    ]
+    for capa in capas:
+        try:
+            output_img = os.path.join(os.path.dirname(output_filename), f"{municipio}_{capa.replace(' ', '_')}.png")
+            img_path = capturar_mapa(municipio, capa, os.path.dirname(output_filename))
+            if os.path.exists(img_path):
+                doc.add_heading(f"Mapa: {capa}", level=2)
+                doc.add_picture(img_path, width=Inches(6))
+        except Exception as e:
+            doc.add_paragraph(f"No se pudo generar el mapa de {capa}: {str(e)}")
 
     doc.save(output_filename)
-    print(f"Documento guardado en: {output_filename}")

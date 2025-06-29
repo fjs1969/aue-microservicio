@@ -1,35 +1,53 @@
-# app/pdf_processor.py
-import os
 import fitz  # PyMuPDF
+import requests
 from docx import Document
 from docx.shared import Inches
+import os
 from app.visor_scraper import capturar_mapa
 
-def procesar_municipio_completo(municipio, urls, output_path):
+def descargar_pdf_y_extraer_texto(url, output_path):
+    response = requests.get(url)
+    with open(output_path, "wb") as f:
+        f.write(response.content)
+    doc = fitz.open(output_path)
+    texto = ""
+    for page in doc:
+        texto += page.get_text()
+    return texto
+
+def procesar_municipio_completo(municipio, urls, output_filename):
+    output_folder = os.path.dirname(output_filename)
+    os.makedirs(output_folder, exist_ok=True)
+
     doc = Document()
-    doc.add_heading(f"Diagnóstico AUE de {municipio}", 0)
+    doc.add_heading(f'Diagnóstico del municipio de {municipio}', 0)
 
-    for nombre_doc, url in urls.items():
-        doc.add_heading(nombre_doc, level=1)
-        doc.add_paragraph(f"URL del documento: {url}")
-
-        if url.endswith(".pdf"):
+    # Extraer y añadir textos de PDFs
+    for nombre, url in urls.items():
+        if url:
+            doc.add_heading(nombre, level=1)
+            pdf_path = os.path.join(output_folder, f"{nombre.replace(' ', '_')}.pdf")
             try:
-                with fitz.open(stream=os.popen(f"curl -s {url}").read().encode(), filetype="pdf") as pdf:
-                    texto = ""
-                    for page in pdf:
-                        texto += page.get_text()
-                    doc.add_paragraph(texto[:1000] + "..." if len(texto) > 1000 else texto)
+                texto = descargar_pdf_y_extraer_texto(url, pdf_path)
+                doc.add_paragraph(texto[:1000] + "..." if len(texto) > 1000 else texto)
             except Exception as e:
-                doc.add_paragraph(f"No se pudo leer el PDF: {e}")
-        else:
-            doc.add_paragraph("Formato no soportado o URL inválida.")
+                doc.add_paragraph(f"Error al procesar {nombre}: {str(e)}")
 
-    # Captura automática del mapa de vulnerabilidad
-    mapa_vulnerabilidad = capturar_mapa(municipio, "Tipología de vulnerabilidad", os.path.dirname(output_path))
-    if mapa_vulnerabilidad and os.path.exists(mapa_vulnerabilidad):
-        doc.add_picture(mapa_vulnerabilidad, width=Inches(6))
-        doc.add_paragraph("Mapa de vulnerabilidad añadido automáticamente.")
+    # Capturar mapas desde el visor GVA
+    capas = [
+        "Tipología de vulnerabilidad",
+        "Planeamiento General",
+        "Clasificación del suelo",
+        "Protección Territorial"
+    ]
+    doc.add_heading("Mapas extraídos del visor GVA", level=1)
+    for capa in capas:
+        try:
+            mapa_path = capturar_mapa(municipio, capa, output_folder)
+            doc.add_paragraph(capa)
+            doc.add_picture(mapa_path, width=Inches(6))
+        except Exception as e:
+            doc.add_paragraph(f"No se pudo capturar la capa '{capa}': {str(e)}")
 
-    doc.save(output_path)
-    print(f"Documento guardado en: {output_path}")
+    doc.save(output_filename)
+    print(f"📄 Diagnóstico generado en: {output_filename}")

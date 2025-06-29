@@ -1,7 +1,5 @@
-# main.py (dentro de la carpeta app)
-
 from fastapi import FastAPI, Form
-from pdf_processor import procesar_municipio_completo  # ✅ Quita "app."
+from app.pdf_processor import procesar_municipio_completo
 import os
 
 app = FastAPI()
@@ -30,3 +28,8 @@ def procesar(
         return {"mensaje": "Diagnóstico generado", "archivo": output_path}
     except Exception as e:
         return {"error": str(e)}
+
+# Opcional: permite probar desde consola directamente si lo necesitas
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

@@ -7,3 +7,4 @@ selenium
 webdriver-manager
 pillow
 python-docx
+PyMuPDF

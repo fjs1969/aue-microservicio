@@ -5,18 +5,15 @@ FROM python:3.9-slim-bullseye
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Añadir repositorios 'non-free' y 'contrib' a sources.list (sigue siendo una buena práctica)
-RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian bullseye-updates main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian-security bullseye-security/updates main contrib non-free" >> /etc/apt/sources.list
-
-# Instala dependencias del sistema necesarias para Chromium y otras herramientas
-# Esto incluye herramientas básicas (wget, gnupg, unzip) y las dependencias de Chromium
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Instalar dependencias de sistema y Google Chrome Stable
+# Esta es una versión mejorada para la instalación de Chrome/Chromedriver
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    # Herramientas básicas
     wget \
     gnupg \
     unzip \
-    # Dependencias necesarias para Chromium en un entorno headless
+    # Dependencias de Chrome/Navegador Headless (se mantienen ya que son genéricas para X server libs)
     ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
@@ -47,15 +44,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxshmfence6 \
     libxss1 \
     libxtst6 \
-    # Instalación de Chromium y su Chromedriver (nombres de paquete ajustados)
-    chromium \
-    chromium-driver \
+    # Ahora, añadir Google Chrome Stable y su repositorio
+    # Descargar la clave GPG de Google de forma segura y añadirla al sistema de claves
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
+    # Añadir el repositorio oficial de Google Chrome para la versión estable
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    \
+    # Actualizar listas de paquetes para incluir el nuevo repositorio de Google Chrome
+    && apt-get update \
+    # Instalar Google Chrome Stable
+    && apt-get install -y google-chrome-stable \
     # Limpia el cache de apt para reducir el tamaño de la imagen
     && rm -rf /var/lib/apt/lists/*
 
-# Configura la variable de entorno para que Chromedriver esté en el PATH
-# La ruta /usr/lib/chromium/ es la ubicación común de chromedriver para esta instalación
-ENV PATH="/usr/lib/chromium/:${PATH}"
+# Configura la variable de entorno PATH para incluir los binarios de Chrome y Chromedriver.
+# Google Chrome Stable instala el binario de Chrome en /usr/bin/google-chrome.
+# ChromeDriver a menudo se instala en /usr/bin/chromedriver o se enlaza allí.
+ENV PATH="/usr/bin:/usr/local/bin:${PATH}"
 
 # Copia el archivo requirements.txt al directorio de trabajo
 COPY requirements.txt .

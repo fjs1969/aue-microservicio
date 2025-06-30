@@ -4,9 +4,15 @@ FROM python:3.9-slim-buster
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
+# Añadir repositorios 'non-free' y 'contrib' a sources.list
+# Esto es crucial para que apt-get pueda encontrar todas las dependencias de Chromium
+RUN echo "deb http://deb.debian.org/debian buster main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian buster-updates main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list
+
 # Instala dependencias del sistema necesarias para Chromium y otras herramientas
 # Esto incluye herramientas básicas (wget, gnupg, unzip) y las dependencias de Chromium
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     gnupg \
     unzip \
@@ -48,7 +54,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Configura la variable de entorno para que Chromedriver esté en el PATH
-# Asegúrate de que esta ruta sea la correcta para tu instalación de chromium-driver
+# La ruta /usr/lib/chromium/ es la ubicación común de chromedriver para esta instalación
 ENV PATH="/usr/lib/chromium/:${PATH}"
 
 # Copia el archivo requirements.txt al directorio de trabajo

@@ -1,19 +1,16 @@
 # Usa una imagen base de Python oficial, ligera, pero basada en Debian 11 (Bullseye).
-# Bullseye tiene paquetes más actualizados y puede resolver el problema de libxshmfence6.
 FROM python:3.9-slim-bullseye
 
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Instalar dependencias de sistema y Google Chrome Stable
-# Esta es una versión mejorada para la instalación de Chrome/Chromedriver
+# Instalar dependencias del sistema necesarias para un navegador headless
+# y las herramientas para descargar y descomprimir Chrome/Chromedriver
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    # Herramientas básicas
     wget \
-    gnupg \
     unzip \
-    # Dependencias de Chrome/Navegador Headless (se mantienen ya que son genéricas para X server libs)
+    # Dependencias mínimas y genéricas para navegadores headless
     ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
@@ -44,23 +41,27 @@ RUN apt-get update && \
     libxshmfence6 \
     libxss1 \
     libxtst6 \
-    # Ahora, añadir Google Chrome Stable y su repositorio
-    # Descargar la clave GPG de Google de forma segura y añadirla al sistema de claves
-    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg \
-    # Añadir el repositorio oficial de Google Chrome para la versión estable
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    \
-    # Actualizar listas de paquetes para incluir el nuevo repositorio de Google Chrome
-    && apt-get update \
-    # Instalar Google Chrome Stable
-    && apt-get install -y google-chrome-stable \
-    # Limpia el cache de apt para reducir el tamaño de la imagen
+    # Limpia el cache de apt
     && rm -rf /var/lib/apt/lists/*
 
-# Configura la variable de entorno PATH para incluir los binarios de Chrome y Chromedriver.
-# Google Chrome Stable instala el binario de Chrome en /usr/bin/google-chrome.
-# ChromeDriver a menudo se instala en /usr/bin/chromedriver o se enlaza allí.
-ENV PATH="/usr/bin:/usr/local/bin:${PATH}"
+# Descargar e instalar Google Chrome y ChromeDriver de "Chrome for Testing"
+# Esto es más fiable para versiones específicas y para entornos sin APT-hell
+ENV CHROME_VERSION="126.0.6478.63" # Puedes actualizar esta versión si necesitas una más reciente
+ENV CHROMEDRIVER_VERSION="126.0.6478.63" # Debe coincidir con la versión de Chrome
+
+RUN wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROME_VERSION}/linux64/chrome-linux64.zip" -O /tmp/chrome-linux64.zip \
+    && unzip /tmp/chrome-linux64.zip -d /opt/chrome-for-testing \
+    && rm /tmp/chrome-linux64.zip \
+    && wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver-linux64.zip \
+    && unzip /tmp/chromedriver-linux64.zip -d /opt/chrome-for-testing \
+    && rm /tmp/chromedriver-linux64.zip \
+    # Asegurarse de que los binarios son ejecutables
+    && chmod +x /opt/chrome-for-testing/chrome-linux64/chrome \
+    && chmod +x /opt/chrome-for-testing/chromedriver-linux64/chromedriver
+
+# Configurar variables de entorno para que Chrome y Chromedriver estén en el PATH
+ENV PATH="/opt/chrome-for-testing/chrome-linux64:/opt/chrome-for-testing/chromedriver-linux64:${PATH}"
+ENV CHROME_PATH="/opt/chrome-for-testing/chrome-linux64/chrome" # Ruta explícita para Selenium si es necesario
 
 # Copia el archivo requirements.txt al directorio de trabajo
 COPY requirements.txt .

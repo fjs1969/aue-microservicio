@@ -1,14 +1,14 @@
-# Usa una imagen base de Python oficial, ligera y basada en Debian.
-FROM python:3.9-slim-buster
+# Usa una imagen base de Python oficial, ligera, pero basada en Debian 11 (Bullseye).
+# Bullseye tiene paquetes más actualizados y puede resolver el problema de libxshmfence6.
+FROM python:3.9-slim-bullseye # <-- CAMBIO CLAVE AQUÍ
 
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Añadir repositorios 'non-free' y 'contrib' a sources.list
-# Esto es crucial para que apt-get pueda encontrar todas las dependencias de Chromium
-RUN echo "deb http://deb.debian.org/debian buster main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian buster-updates main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list
+# Añadir repositorios 'non-free' y 'contrib' a sources.list (sigue siendo una buena práctica)
+RUN echo "deb http://deb.debian.org/debian bullseye main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian bullseye-updates main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian-security bullseye-security/updates main contrib non-free" >> /etc/apt/sources.list
 
 # Instala dependencias del sistema necesarias para Chromium y otras herramientas
 # Esto incluye herramientas básicas (wget, gnupg, unzip) y las dependencias de Chromium
@@ -67,6 +67,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Comando para iniciar la aplicación Uvicorn/FastAPI
-# Asegúrate de que 'main:app' apunta a tu aplicación FastAPI
-# Por ejemplo, si tu archivo principal es 'main.py' y tu instancia de FastAPI se llama 'app'
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

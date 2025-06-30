@@ -55,7 +55,7 @@ RUN wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROME_V
     && unzip /tmp/chrome-linux64.zip -d /opt/chrome-for-testing \
     && rm /tmp/chrome-linux64.zip \
     && wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver-linux64.zip \
-    && unzip /tmp/chromedriver-linux4.zip -d /opt/chrome-for-testing \
+    && unzip /tmp/chromedriver-linux64.zip -d /opt/chrome-for-testing \
     && rm /tmp/chromedriver-linux64.zip \
     # Asegurarse de que los binarios son ejecutables
     && chmod +x /opt/chrome-for-testing/chrome-linux64/chrome \
@@ -63,7 +63,8 @@ RUN wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROME_V
 
 # Configurar variables de entorno para que Chrome y Chromedriver estén en el PATH
 ENV PATH="/opt/chrome-for-testing/chrome-linux64:/opt/chrome-for-testing/chromedriver-linux64:${PATH}"
-ENV CHROME_PATH="/opt/chrome-for-testing/chrome-linux64/chrome" # Ruta explícita para Selenium si es necesario
+# Ruta explícita para Selenium si es necesario
+ENV CHROME_PATH="/opt/chrome-for-testing/chrome-linux64/chrome"
 
 # Copia el archivo requirements.txt al directorio de trabajo
 COPY requirements.txt .

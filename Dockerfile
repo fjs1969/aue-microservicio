@@ -1,6 +1,6 @@
 # Usa una imagen base de Python oficial, ligera, pero basada en Debian 11 (Bullseye).
 # Bullseye tiene paquetes más actualizados y puede resolver el problema de libxshmfence6.
-FROM python:3.9-slim-bullseye # EL COMENTARIO SE HA QUITADO DE ESTA LÍNEA
+FROM python:3.9-slim-bullseye
 
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app

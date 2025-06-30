@@ -46,14 +46,16 @@ RUN apt-get update && \
 
 # Descargar e instalar Google Chrome y ChromeDriver de "Chrome for Testing"
 # Esto es más fiable para versiones específicas y para entornos sin APT-hell
-ENV CHROME_VERSION="126.0.6478.63" # Puedes actualizar esta versión si necesitas una más reciente
-ENV CHROMEDRIVER_VERSION="126.0.6478.63" # Debe coincidir con la versión de Chrome
+# Puedes actualizar esta versión si necesitas una más reciente
+ENV CHROME_VERSION="126.0.6478.63"
+# Debe coincidir con la versión de Chrome
+ENV CHROMEDRIVER_VERSION="126.0.6478.63"
 
 RUN wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROME_VERSION}/linux64/chrome-linux64.zip" -O /tmp/chrome-linux64.zip \
     && unzip /tmp/chrome-linux64.zip -d /opt/chrome-for-testing \
     && rm /tmp/chrome-linux64.zip \
     && wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" -O /tmp/chromedriver-linux64.zip \
-    && unzip /tmp/chromedriver-linux64.zip -d /opt/chrome-for-testing \
+    && unzip /tmp/chromedriver-linux4.zip -d /opt/chrome-for-testing \
     && rm /tmp/chromedriver-linux64.zip \
     # Asegurarse de que los binarios son ejecutables
     && chmod +x /opt/chrome-for-testing/chrome-linux64/chrome \
